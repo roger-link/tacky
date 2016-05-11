@@ -36,3 +36,18 @@
 [hidden][style="display: block;"] {
   display: block !important;
 }
+
+
+
+# game grid
+table {
+  border-collapse: collapse;
+  border: 1px solid black;
+}
+td {
+  width: 10em;
+  height: 10em;
+  border: 1px solid black;
+}
+
+
