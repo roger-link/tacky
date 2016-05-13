@@ -1,24 +1,16 @@
 {% extends "base.html" %}
-
 {% block content %}
-{{game}}
-{{game.board}}
 
-<table>
-  <tr>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td></td>
-    <td></td>
-  </tr>
+<table class='tacky'>
+  {% for key, value in player_moves.items %}
+      {% cycle '<tr>' '' '' %}
+          <td class={{value}}></td>
+      {% cycle '' '' '</tr>' %}
+  {% endfor %}
 </table>
+
+<form class="updateform" action="{% url 'games:game' %}" method="post">
+    {% csrf_token %}
+    {{ board }}
+</form>
 {% endblock %}
