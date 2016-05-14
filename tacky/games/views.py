@@ -3,11 +3,12 @@ from __future__ import absolute_import, unicode_literals
 
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
 
-from tacky.users import models as u_models
-from tacky.games import models as g_models
-from tacky.games import forms
+from tacky.users.models  import User
+from tacky.games.models import Game
+from tacky.games.forms import BoardForm
 
 
 class GameView(LoginRequiredMixin, TemplateView):
@@ -15,50 +16,44 @@ class GameView(LoginRequiredMixin, TemplateView):
     template_name = "pages/home.html"
 
     def get_context_data(self, **kwargs):
-        context = super(GameView, self).get_context_data(**kwargs)
+
         if self.request.method == "POST":
-            game = g_models.Game.objects.get(id=self.request.POST['game'])
+            game = Game.objects.get(id=self.request.POST['game'])
         else:
-            game = self.start_game()
-        context['board'] = forms.BoardForm(initial={'player': self.request.user.id, 'game': game })
-        context['player_moves'] = game.board.player_moves()
+            game = Game.objects.start_game(self.request.user)
+
+        context = super(GameView, self).get_context_data(**kwargs)
+        context['form'] = BoardForm(initial={'player': self.request.user.id, 'game': game })
+        context['board'] = game.board
         return context
 
-    def start_game(self):
-    	computer = u_models.User.objects.get(name='computer')
-    	board = g_models.Board.objects.create(current_player=self.request.user)
-        game = g_models.Game.objects.create(player1=self.request.user, player2=computer, board=board)
-
-    	return game
 
     def post(self, request, *args, **kwargs):
 
-        form = forms.BoardForm(self.request.POST)
+        form = BoardForm(self.request.POST)
         context = self.get_context_data(**kwargs)
 
         if form.is_valid():
-            post_data = form.cleaned_data
-            game = g_models.Game.objects.get(id=post_data['game'])
-            user = u_models.User.objects.get(id=post_data['player'])
-            coordinate = g_models.Coordinate.objects.create(position=post_data['move'], player=user)
-            game.board.coordinates.add(coordinate)
-            is_win = game.board.is_win(game.board.player_moves())
+            game = Game.objects.get(id=form.cleaned_data['game'])
+            game.board.make_move(form.cleaned_data['player'], form.cleaned_data['move'])
+            player_win = game.board.is_win(game.board.board_moves, 'player')
 
-            if is_win:
-                return HttpResponse('Game is over!!', status=200, content_type='application/json')
+            if player_win:
+                context['win_message'] = 'You won!!!'
+            elif game.board.is_full:
+                context['win_message'] = 'You tied!!!'
+
             else:
-                player2 = u_models.User.objects.get(name='computer')
-                coordinate =  g_models.Coordinate.objects.create(position=game.board.get_move(), player=player2)
-                game.board.coordinates.add(coordinate)
-                is_win = game.board.is_win(game.board.player_moves())
+                # computers turn
+                computer = User.objects.get(name='computer')
+                game.board.make_move(computer.id)
+                computer_win = game.board.is_win(game.board.board_moves, 'computer')
+                if computer_win:
+                    context['win_message'] = 'You lost!!!'
+                elif game.board.is_full:
+                    context['win_message'] = 'You tied!!!'
 
-                if is_win:
-                    return HttpResponse('Game is over!!', status=200, content_type='application/json')
-
-                context = self.get_context_data(**kwargs)
-                context['player_moves'] = game.board.player_moves()
-                return self.render_to_response(context)
-
-
-    def win(self):
-        return HttpResponse('Game is over!!', status=200, content_type='application/json')
+                context['board'] = game.board
+            return self.render_to_response(context)
+        else:
+            return HttpResponseRedirect(reverse('games::game'))
