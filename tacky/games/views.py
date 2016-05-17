@@ -6,7 +6,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
-from tacky.users.models  import User
 from tacky.games.models import Game
 from tacky.games.forms import BoardForm
 
@@ -35,20 +34,16 @@ class GameView(LoginRequiredMixin, TemplateView):
 
         if form.is_valid():
             game = Game.objects.get(id=form.cleaned_data['game'])
-            game.board.make_move(form.cleaned_data['player'], form.cleaned_data['move'])
-            player_win = game.board.is_win(game.board.board_moves, 'player')
+            game.board.make_move(move=form.cleaned_data['move'])
 
-            if player_win:
+            if game.board.is_win('player'):
                 context['win_message'] = 'You won!!!'
             elif game.board.is_full:
                 context['win_message'] = 'You tied!!!'
 
             else:
-                # computers turn
-                computer = User.objects.get(name='computer')
-                game.board.make_move(computer.id)
-                computer_win = game.board.is_win(game.board.board_moves, 'computer')
-                if computer_win:
+                game.board.make_move('computer')
+                if game.board.is_win('computer'):
                     context['win_message'] = 'You lost!!!'
                 elif game.board.is_full:
                     context['win_message'] = 'You tied!!!'

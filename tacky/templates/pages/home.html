@@ -4,8 +4,9 @@
  {% if win_message %}
    {{win_message}}
  {% else %}
+ {{board.sorted_moves}}
 <table class='tacky'>
-  {% for key, value in board.board_moves.items %}
+  {% for value in board.sorted_moves %}
       {% cycle '<tr>' '' '' %}
           <td class={{value}}></td>
       {% cycle '' '' '</tr>' %}

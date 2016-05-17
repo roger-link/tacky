@@ -1,32 +1,24 @@
 import factory
 from factory import fuzzy
+import json
 
 from tacky.users.tests import factories as users_factories
 
-class CoordinateFactory(factory.django.DjangoModelFactory):
-    position = fuzzy.FuzzyInteger(1, 9)
-    player = factory.SubFactory(users_factories.UserFactory)
-
-    class Meta:
-        model = 'games.Coordinate'
-
-
 class BoardFactory(factory.django.DjangoModelFactory):
-    current_player = factory.SubFactory(users_factories.UserFactory)
+    coordinates = json.dumps({
+                              0:'computer',
+                              1:'player',
+                              2:'computer',
+                              3:'player',
+                              4:'computer',
+                              5:'player',
+                              6:'computer',
+                              7:'player',
+                              8:'empty'}
+                             , ensure_ascii=False)
 
     class Meta:
         model = 'games.Board'
-
-    @factory.post_generation
-    def coordinates(self, create, extracted, **kwargs):
-        if not create:
-            # Simple build, do nothing.
-            return
-
-        if extracted:
-            # A list of groups were passed in, use them
-            for coordinate in extracted:
-                self.coordinates.add(coordinate)
 
 class GameFactory(factory.django.DjangoModelFactory):
     player1 = factory.SubFactory(users_factories.UserFactory)
